@@ -29,7 +29,7 @@ nb_datasets = 30
 
 # training labels
 trainLabels = np.genfromtxt(
-    fname = '/Users/Clovis/Documents/My Courses/Machine Learning/Project/trainLabels.csv',
+    fname = 'trainLabels.csv',
     skip_header = 1,
     delimiter = ',',
     )
@@ -38,7 +38,7 @@ trainLabels = np.genfromtxt(
 data = {}
 for x in range(1,nb_datasets+1):
     data[x] = np.genfromtxt(
-    fname = '/Users/Clovis/Documents/My Courses/Machine Learning/Project/data/%d.csv' %x,
+    fname = 'data/%d.csv' %x,
     skip_header = 1,
     delimiter = ',',
     )
