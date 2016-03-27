@@ -157,7 +157,7 @@ def main():
 
 # Load data
 def loadData():
-	trainLabels = np.genfromtxt(fname = '/Users/Clovis/Documents/My Courses/Machine Learning/Project/trainLabels.csv', skip_header = 1, delimiter = ',', dtype=float )
+	trainLabels = np.genfromtxt(fname = 'trainLabels.csv', skip_header = 1, delimiter = ',', dtype=float )
 
 	# Get the training data
 	training = {}
@@ -167,7 +167,7 @@ def loadData():
 	# data : array containing all the csv data up to the "nb_datasets"'s csv file.
 	data = {}
 	for x in range(1,nb_datasets+1):
-	    data[x] = np.genfromtxt(fname = '/Users/Clovis/Documents/My Courses/Machine Learning/Project/data/%d.csv' %x,skip_header = 1, delimiter = ',', dtype=float )
+	    data[x] = np.genfromtxt(fname = 'data/%d.csv' %x,skip_header = 1, delimiter = ',', dtype=float )
 	    
 	# Each output reprensents a security : stocks[5] = stock prices of O5 over all datasets
 	stocks = {}
