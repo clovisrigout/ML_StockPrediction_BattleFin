@@ -1,3 +1,4 @@
+# 0.43175 => 349
 import csv
 import math
 import numpy as np
@@ -22,7 +23,6 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.linear_model import SGDRegressor
 from sklearn.linear_model import LogisticRegression
 from sklearn.linear_model import BayesianRidge
-from sklearn.linear_model import ElasticNet
 
 # from sklearn.neural_network import MLPRegressor
 
@@ -45,70 +45,8 @@ def main():
 	# Load Data
 	(data, stocks, features, training) = loadData()
 
-	#feature pre-processing : normalizing to compare variances
-	norm_features = preprocess_features(features, 'normalize')
+	# not using any features...
 
-	#find variance of features
-	feat_var = find_variance(norm_features)
-
-	# find the features worth keeping based on variance:
-	high_var_feats_indices = filter_values_by_threshold(feat_var, var_threshold)
-
-	# only keep the needed features
-	high_var_features = filter_features_by_values(features,high_var_feats_indices)
-
-	# Now standarize these remaining features
-	high_var_std_features = preprocess_features(high_var_features, 'standardize')
-
-	# get correlation matrix with standarized remaining features
-	(high_var_feat_corr,high_var_feat_p_corr) = get_correlation_matrix(high_var_std_features)
-
-	# filter by high p-value
-	final_tuples = filter_tuples_by_threshold(high_var_feat_p_corr,p_value_threshold)
-
-	# get final feature names
-	final_feature_ids = [value[0] for value in final_tuples.keys()]
-	final_feats = filter_features_by_values(features,final_feature_ids)
-
-	# get input features for selection (as vectors)
-	input_feats = {}
-	for x in range(0,len(stocks[1])):
-	    input_feats[x] = np.zeros(len(final_feats))
-	    count = 0
-	    for key in final_feats:
-	        input_feats[x][count] = final_feats[key][x]
-	        count = count+1
-
-	final_features = [final_feature for final_feature in input_feats.values()]
-
-	# now select the best features for each stocks
-	feature_inputs = {}
-	selected_feature_keys = {}
-	for stock in range(1, nb_stocks+1):
-		# Recursive feature elimination
-		svr = SVR(kernel="linear")
-		rfe = RFE(svr, step=1)
-		rfe = rfe.fit(final_features,stocks[stock])
-		rfe.support_
-		rfe.ranking_
-
-		# selected features by RFE
-		selected_feature_keys[stock] = []
-		count = 0
-		for key in final_feats.keys():
-		    if (rfe.support_[count] == True):
-		        selected_feature_keys[stock].append(key)
-		    count = count + 1
-
-	# get the feature inputs corresponding to the keys found through svm for each stock
-	for stock in range(1, nb_stocks+1):
-		feature_inputs[stock] = {}
-		count = 0
-		for dataset in range(1,nb_datasets+1):
-			feature_inputs[stock][dataset] = []
-			for key in selected_feature_keys[stock]:
-				feature_inputs[stock][dataset].append(data[dataset][54,198:][key-1])
-		print(len(feature_inputs[stock]))
 
 	# get the closing values to be used in our inputs 
 	# closing_inputs[1] = vector of closing values for security 1
@@ -123,45 +61,49 @@ def main():
 	for stock in range(1, nb_stocks+1):
 		glb_closing_inputs[stock] = {}
 		for dataset in range(1,nb_datasets+1):
-			glb_growth = (1+data[dataset][50,stock-1])*(1+data[dataset][51,stock-1])*(1+data[dataset][52,stock-1])*(1+data[dataset][53,stock-1])*(1+data[dataset][54,stock-1])-1
+			growth = (1+data[dataset][52,stock-1])*(1+data[dataset][53,stock-1])*(1+data[dataset][54,stock-1])
 			# take the nth root of the global growth
-			glb_closing_inputs[stock][dataset] = pow(glb_growth, 1.0/5.0)
+			if(growth < 0):
+				glb_growth = -math.pow(-growth, float(1)/3.0)
+			else:
+				glb_growth = math.pow(growth, float(1)/3.0)
 
-	inputs = {}
-	for stock in range(1, nb_stocks+1):
-		inputt = []
-		for dataset in range(1, nb_datasets+1):	
-			inputt.append(np.append((glb_closing_inputs[stock][dataset]),(feature_inputs[stock][dataset])))
-		inputs[stock] = inputt
-		print(len(inputs[stock]))
+			glb_closing_inputs[stock][dataset] = glb_growth-1
 
 	predictions = []
 	predictions.append([x for x in range(201,nb_datasets+1)])
 	for stock in range(1,nb_stocks+1):
-		outputs = [output for output in training[stock]] 
-		final_inputs = [inputt for inputt in inputs[stock]]
+		outputs = np.array([output for output in training[stock]]).reshape((200,))
+		final_inputs = [inputt for inputt in glb_closing_inputs[stock].values()]
 
-		training_inputs = final_inputs[:200]
-		prediction_inputs = final_inputs[200:]
+		training_inputs = np.array(final_inputs[:200]).reshape((200,1))			
+		prediction_inputs = np.array(final_inputs[200:]).reshape((310,1))
 		print(np.array(training_inputs).shape)
 		print(np.array(outputs).shape)
 
-		# perceptron = Perceptron(penalty = 'l1')
-		# perceptron = perceptron.fit(np.array(inputs, dtype=float), np.array(outputs, dtype=float))
-		# perceptron = perceptron.fit(np.array(inputs), np.array(outputs))
+		# predictor = Perceptron(penalty = 'l1')
+		# predictor = perceptron.fit(np.array(inputs), np.array(outputs))
 
-		# sgd = SGDClassifier(loss = 'perceptron', penalty = 'l1')
-		# sgd.fit(np.array(inputs), np.array(outputs))
+		# predictor = SGDClassifier(loss = 'perceptron', penalty = 'l1')
+		# predictor.fit(np.array(inputs), np.array(outputs))
 
-		# mlp = MLPRegressor()
-		# mlp.fit(np.array(inputs), np.array(outputs, dtype='float')[0])
+		# predictor = MLPRegressor()
+		# predictor.fit(np.array(inputs), np.array(outputs, dtype='float')[0])
 
-		sgd = SGDRegressor()
-		sgd.fit(np.array(training_inputs), np.array(outputs))
+		# predictor = SGDRegressor(loss="huber", penalty='l1')
+		# predictor.fit(training_inputs, outputs)
+
+		# predictor = LogisticRegression(penalty = 'l1')
+		# predictor.fit(np.array(training_inputs).reshape((200,1)), np.array(outputs), weights)
+
+		# predictor = BayesianRidge()
+		# predictor.fit(training_inputs, outputs)
+		predictor = ElasticNet(l1_ratio = 1)
+		predictor.fit(training_inputs, outputs)
 
 		# now predict...
-		sgd_predict = sgd.predict(np.array(prediction_inputs))
-		predictions.append([prediction for prediction in sgd_predict])
+		predictor_predict = predictor.predict(prediction_inputs)
+		predictions.append([prediction for prediction in predictor_predict])
 
 	predictions = np.array(predictions)
 	with open('sampleSubmission1.csv', 'w') as f:
