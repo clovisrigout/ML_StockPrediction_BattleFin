@@ -1,107 +1,63 @@
 import csv
-import numpy as np
-import matplotlib.pyplot as plt
+# import numpy as np
 
-########################################################
+# take day 1
+	# then take last 5 prices of each stock
+	# and take actual 2hr later prices for each stock also
+	# get a weights vector for each stock from that
+# use this weights vector to predict for rest
 
-def getData(n, d):
-# Fetch prices vector for 'n'th stock from 'd'.csv
+def getPrices(d):
+	# get last 5 prices for day 'd'
 	prices = []
 	with open("data/%d.csv" %d, 'r') as csvfile:
 		csvFileReader = csv.reader(csvfile)
-		next(csvFileReader) # skipping column names
-		for row in csvFileReader:
-			prices.append(float(row[n-1]))
+		for skip in range(51):
+			next(csvFileReader)
+		for priceRow in csvFileReader:
+			prices.append((priceRow[:198]))
+	return prices 	# this is a weird list of lists btw- each element is a list of prices of all 198 stocks at that time.
 
-	# Fetch actual price of stock 2 hours later on that day from trainLabels.csv
-	with open("trainLabels.csv", 'r') as csvfile:
-		csvFileReader = csv.reader(csvfile)
-	  	for skip in range(d):
-	  		next(csvFileReader)
-	  	actual = float(next(csvFileReader)[n])
 
-	return actual, prices
+prices = getPrices(1)
+actualPrices = []
+with open("trainLabels.csv", 'r') as csvfile:	# get actual prices for each stock for day 1
+	csvFileReader = csv.reader(csvfile)
+	next(csvFileReader)
+	actualPrices = next(csvFileReader)[1:]
 
-###############################################
+weights = [ [1.0/5]*5 ] * 198	# random initial values
 
-def perceptron(inputNodes, weight, bias_factor, learn_rate):
-# Not exactly a by-the-books perceptron, but the idea is to use
-# an input of 5 prices to learn the weight associated with each price
-# and then use this weight vector to make predictions on new inputs
+for stock in range(198):
+	prediction = 0.0
+	prediction_prev = 0.0
+	count = 0
 
-	# Training it 5 times, idk why 5.
-	for rep in range(5):
-		# Weighted Sum function
-		prediction = -bias_factor
-		for i in range(len(inputNodes)):
-			prediction += inputNodes[i] * weight[i]
+	#training the weights for each stock
+	while abs(float(actualPrices[stock]) - prediction) > 0.01:
+		for i in range(5):
+			prediction += weights[stock][i] * float(prices[i][stock])
 
-		# Weight update rule
-		# global variable actual used in loss function
-		for i in range(len(inputNodes)):
-			# Multiplied the weight update by ((i+1)*1.0/len(inputNodes))
-			# to factor the fact that the 5th input is more
-			# important than the 1st one
-			weight[i] += learn_rate * (actual - prediction) * inputNodes[i] * ((i+1)*1.0/len(inputNodes))
+		if abs(float(actualPrices[stock]) - prediction) > abs(float(actualPrices[stock]) - prediction_prev):
+			break
+		else: 
+			prediction_prev = prediction
+		
+		for i in range(5):
+			weights[stock][i] += 0.05 * (float(actualPrices[stock]) - prediction) * float(prices[i][stock]) * ((i+1.0)/5)
 
-		print rep+1, prediction
-		print weight
-		print
+for day in range(201,511):
+	prices = getPrices(day)
 
-	prediction = -bias_factor
-	for i in range(len(inputNodes)):										
-		prediction += inputNodes[i] * weight[i]
+	predictedPrices = [day]
+	for stock in range(198):
+		prediction = 0.0
+		for i in range(5):
+			prediction += weights[stock][i] * float(prices[i][stock])
+		predictedPrices.append(prediction)
 
-	return prediction, weight
-
-#############################################################
-
-actual, prices = getData(1,1)
-time = [i for i in range(1,len(prices)+1)]
-
-plt.scatter(time, prices)
-plt.xlabel('Time Interval')
-plt.ylabel('Stock Price')
-plt.show()
-
-prediction, weight = perceptron(prices[-5:], [1.0/5]*5, 0.0, 0.05)
-
-print prediction, actual
-
-##################################################################
-
-# Use the weights vector obtained on training the perceptron 
-# for the 1st stock for day 1 on the 2nd stock for day 1
-
-actual, prices = getData(2,1)
-
-plt.scatter(time, prices)
-plt.xlabel('Time Interval')
-plt.ylabel('Stock Price')
-plt.show()
-
-prices = prices[-5:]
-prediction = 0.0
-for i in range(len(weight)):
-	prediction += prices[i] * weight[i]
-
-print prediction, actual
-
-##############################################################
-
-# Use the weights vector obtained on training the perceptron 
-# for the 1st stock for day 1 on the 1st stock for day 2
-
-actual, prices = getData(1,2)
-
-plt.scatter(time, prices)
-plt.xlabel('Time Interval')
-plt.ylabel('Stock Price')
-plt.show()
-
-prices = prices[-5:]
-prediction = 0.0
-for i in range(len(weight)):
-	prediction += prices[i] * weight[i]
-
-print prediction, actual
+	with open("submission.csv", 'a') as output:
+		output.write(str(predictedPrices[0]))
+		for item in predictedPrices[1:]:
+			output.write(',' + str(item))
+		output.write('\n')
