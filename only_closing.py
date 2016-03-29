@@ -48,7 +48,6 @@ def main():
 
 	# not using any features...
 
-
 	# get the closing values to be used in our inputs 
 	# closing_inputs[1] = vector of closing values for security 1
 	closing_inputs = {}
@@ -86,11 +85,11 @@ def main():
 		# predictor = LogisticRegression(penalty = 'l1')
 		# predictor.fit(np.array(training_inputs).reshape((200,1)), np.array(outputs), weights)
 
-		# predictor = BayesianRidge()
-		# predictor.fit(training_inputs, outputs)
-
-		predictor = ElasticNet(l1_ratio = 1)
+		predictor = BayesianRidge()
 		predictor.fit(training_inputs, outputs)
+
+		# predictor = ElasticNet(l1_ratio = 1)
+		# predictor.fit(training_inputs, outputs)
 
 		# now predict...
 		predictor_predict = predictor.predict(prediction_inputs)
