@@ -1,4 +1,5 @@
-# BEST WITH last prediction only and 10 times training
+# current : 	0.43480 => 375
+import os
 import csv
 import math
 import numpy as np
@@ -13,7 +14,12 @@ p_value_threshold = 0.7
 nb_stocks = 198
 
 def main():
+	# get which features to use in perceptron per stock...
+	import test
+	inputsss = test.main()
+	print(len(inputsss))
 	# Load Data
+	(data, stocks, features, training) = loadData()
 	actual = {}
 	prices = {}
 	train_prediction = {}
@@ -22,6 +28,7 @@ def main():
 	weights = {}
 	predictions = []
 	for stock in range(1, nb_stocks+1):
+		print("CLOVIS")
 		print(stock)
 		actual[stock] = {}   # dictionary where key is the day and value is stock value
 		prices[stock] = {}   # dictionary where key is day and value is array of prices
@@ -32,11 +39,26 @@ def main():
 			actual_temp, prices_temp = getData(stock,dataset)
 			actual[stock][dataset] = actual_temp
 			prices[stock][dataset] = prices_temp
-			train_prediction[stock][dataset], weights[stock][dataset] = perceptron(prices[stock][dataset][-1:],[1.0]*1, 0.0, 0.05, actual[stock][dataset])
+			last_values = prices[stock][dataset][-1:]
+			print(last_values)
+			print(len(inputsss[stock][dataset-1]))
+			inputt = last_values
+			print(inputt)
+			inputt.append(data[dataset][54,10+197])
+			inputt.append(data[dataset][54,129+197])
+			print(inputt)
+			print("HELLO")
+			print(len(inputt))
+			inital_weights = []
+			inital_weights.append(0.9)
+			inital_weights.extend([1/(len(inputsss[stock][dataset-1])-1)]*(len(inputsss[stock][dataset-1])-1))
+			print(len(inital_weights))
+			print(inital_weights)
+			train_prediction[stock][dataset], weights[stock][dataset] = perceptron(inputsss[stock][dataset-1],inital_weights, 0.0, 0.05, actual[stock][dataset])
 
 			# prediction[stock][dataset] = 0.0
 
-		weight[stock] = [0]*1
+		weight[stock] = [0]*len(inputsss[stock][0])
 		for i in range(1, len(weights[stock])):
 			weight[stock] = [x + y for x,y in zip(weight[stock],weights[stock][i])]
 		weight[stock] = [float(x)/len(weights[stock]) for x in weight[stock]]
@@ -108,7 +130,7 @@ def perceptron(inputNodes, weight, bias_factor, learn_rate, actual):
 	# Training it 10 times, idk why 10.
 	for rep in range(10):
 		# Weighted Sum function
-		prediction = -bias_factor
+		prediction = float(-bias_factor)
 		for i in range(len(inputNodes)):
 			prediction += inputNodes[i] * weight[i]
 
@@ -131,6 +153,52 @@ def perceptron(inputNodes, weight, bias_factor, learn_rate, actual):
 
 
 		return float(prediction), weight
+
+def loadData():
+	trainLabels = np.genfromtxt(fname = 'trainLabels.csv', skip_header = 1, delimiter = ',', dtype=float )
+
+	# Get the training data
+	training = {}
+	for x in range(1,nb_stocks+1):
+		training[x] = np.array(trainLabels[:,x], dtype=float)
+
+	# data : array containing all the csv data up to the "nb_datasets"'s csv file.
+	data = {}
+	for x in range(1,nb_datasets+1):
+	    data[x] = np.genfromtxt(fname = 'data/%d.csv' %x,skip_header = 1, delimiter = ',', dtype=float )
+	    
+	# Each output reprensents a security : stocks[5] = stock prices of O5 over all datasets
+	stocks = {}
+	for x in range(1,nb_stocks+1):  # there are 198 securities 
+	    stocks[x] = np.array(data[1][:,x-1])  # gets the colomn of the first datafile
+	    for y in range(2,nb_datasets+1):
+	        stocks[x] = np.append(stocks[x],data[y][:,x-1]) 
+
+	# Evolution of the features (I5 = features[5]) over all datasets 
+	features = {}
+	for x in range(1,245):    # 244 features total
+	    features[x] = np.array(data[1][:,x+197])
+	    for y in range(2,nb_datasets+1):
+	        features[x] = np.append(features[x],data[y][:,x+197])
+
+	# Vector of features used to predict the stocks
+	inputs = {}
+	dataset = 1
+	y = 1
+	total_datapoints = nb_datasets*55   # 55 time entries per datafile
+	x = 0
+	inputs[x] = np.array(data[dataset][y-1][198:])
+	while( x < total_datapoints+1 and dataset <= nb_datasets):
+	    if(y < 55):       # we haven't yet reached the end of the datafile yet
+	        x = x + 1
+	        inputs[x] = np.array(data[dataset][y][198:]) # start taking entries from 198th column
+	        y = y + 1
+	    else:
+	        dataset = dataset+1   # we've reached the end of the datafile
+	        y = 0
+
+	return (data, stocks, features, training)
+
 
 main()
 

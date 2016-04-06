@@ -1,9 +1,9 @@
-# BEST WITH last prediction only and 10 times training
+# 4.2889 => 329
+# 4.3203 => 354
 import csv
 import math
 import numpy as np
 import sklearn
-from sklearn import cross_validation
 
 #np.set_printoptions(threshold=np.nan)
 np.set_printoptions(threshold=100)
@@ -32,11 +32,12 @@ def main():
 			actual_temp, prices_temp = getData(stock,dataset)
 			actual[stock][dataset] = actual_temp
 			prices[stock][dataset] = prices_temp
-			train_prediction[stock][dataset], weights[stock][dataset] = perceptron(prices[stock][dataset][-1:],[1.0]*1, 0.0, 0.05, actual[stock][dataset])
+
+			train_prediction[stock][dataset], weights[stock][dataset] = perceptron(prices[stock][dataset][-5:],[1.0/5]*5, 0.0, 0.05, actual[stock][dataset])
 
 			# prediction[stock][dataset] = 0.0
 
-		weight[stock] = [0]*1
+		weight[stock] = [0]*5
 		for i in range(1, len(weights[stock])):
 			weight[stock] = [x + y for x,y in zip(weight[stock],weights[stock][i])]
 		weight[stock] = [float(x)/len(weights[stock]) for x in weight[stock]]
