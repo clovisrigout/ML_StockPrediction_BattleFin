@@ -70,12 +70,12 @@ def main():
 		if(True): #actual predictions	
 			for dataset in range(201, nb_datasets+1):
 				prediction[stock][dataset] = 0
-				for i in range(len(weight[stock])):
+				for i in range(0,len(weight[stock])):
 					prediction[stock][dataset] += prices[stock][dataset][i] * weight[stock][i]
 		else:
 			for dataset in range(1, 200):
 				prediction[stock][dataset] = 0
-				for i in range(len(weight[stock])):
+				for i in range(0,len(weight[stock])):
 					prediction[stock][dataset] += prices[stock][dataset][i] * weight[stock][i]
 	for stock in range(1, nb_stocks+1):
 		predictions.append([predict for predict in prediction[stock].values()])
@@ -126,6 +126,7 @@ def perceptron(inputNodes, weight, bias_factor, learn_rate, actual):
 # Not exactly a by-the-books perceptron, but the idea is to use
 # an input of 5 prices to learn the weight associated with each price
 # and then use this weight vector to make predictions on new inputs
+# HOW TO FIND alpha? Plot the Objective Function J(T) (i.e prediction) as a function of the number of iterations, and check how long it takes for it to converge...
 
 	# Training it 10 times, idk why 10.
 	for rep in range(10):

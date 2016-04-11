@@ -161,23 +161,32 @@ def main():
 	for stock in range(1, nb_stocks+1):
 
 		X3 = [inputt for inputt in inputs[stock]][:200]
+		X3_scaled = preprocessing.scale(X3)
 		outputs = [output for output in training[stock]][:200]
 		
-		# kb = SelectKBest(f_regression, k=2)
-		# # here we also modify the stock values... not sure if we should!
-		# kb.fit(X3, outputs)
-		# print(kb.scores_)
-		svr = SVR(kernel="linear")
-		rfe = RFE(svr, step=1)
-		rfe = rfe.fit(X3,outputs)
-		print(rfe.support_)
-		print(rfe.ranking_)
+		kb = SelectKBest(f_regression, k=2)
+		# here we also modify the stock values... not sure if we should!
+		kb = kb.fit(X3_scaled, outputs)
+		print(kb.scores_)
 		selected_feature_keys[stock] = []
 		count = 0
 		for key in selected_features2.keys():
-			if (rfe.support_[count] == True):
+			if(count in kb.get_support(indices = True)):
 				selected_feature_keys[stock].append(key)
-			count = count + 1
+			count = count+1
+		print("selected_feature_keys")
+		print(selected_feature_keys[stock])
+		# svr = SVR(kernel="linear")
+		# rfe = RFE(svr, step=1)
+		# rfe = rfe.fit(X3_scaled,outputs)
+		# print(rfe.support_)
+		# print(rfe.ranking_)
+		# selected_feature_keys[stock] = []
+		# count = 0
+		# for key in selected_features2.keys():
+		# 	if (rfe.support_[count] == True):
+		# 		selected_feature_keys[stock].append(key)
+		# 	count = count + 1
 
 
 	feature_inputs = {}
